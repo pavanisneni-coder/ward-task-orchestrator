@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply antialiased text-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  }
+
+  /* Custom scrollbar hiding for census scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* Urgency left-border animation for overdue */
+  .task-overdue-pulse {
+    animation: overdue-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes overdue-glow {
+    0%, 100% { border-left-color: #EF4444; }
+    50% { border-left-color: #FCA5A5; }
+  }
+}

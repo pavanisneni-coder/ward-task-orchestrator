@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskType {
+  MEDICATION
+  MONITORING
+  CARE_PROCEDURE
+  ONE_TIME
+}
+
+model Nurse {
+  id          String            @id @default(uuid())
+  name        String
+  role        String            @default("RN")
+  avatarUrl   String?
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+
+  shifts      Shift[]
+  assignments NurseAssignment[]
+  taskLogs    TaskLog[]
+  notes       Note[]
+
+  @@index([isActive])
+}
+
+model Patient {
+  id          String            @id @default(uuid())
+  name        String
+  bedNumber   String
+  age         Int?
+  gender      String?
+  diagnosis   String?
+  status      String            @default("STABLE")
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+
+  tasks       Task[]
+  assignments NurseAssignment[]
+  notes       Note[]
+  taskLogs    TaskLog[]
+
+  @@index([isActive])
+  @@index([bedNumber])
+}
+
+model Shift {
+  id          String            @id @default(uuid())
+  nurseId     String
+  startTime   DateTime
+  endTime     DateTime
+  archived    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+
+  nurse       Nurse             @relation(fields: [nurseId], references: [id])
+  assignments NurseAssignment[]
+  taskLogs    TaskLog[]
+  notes       Note[]
+  tasks       Task[]
+
+  @@index([nurseId])
+  @@index([archived])
+  @@index([startTime, endTime])
+}
+
+model NurseAssignment {
+  id         String   @id @default(uuid())
+  nurseId    String
+  patientId  String
+  shiftId    String
+  createdAt  DateTime @default(now())
+
+  nurse      Nurse    @relation(fields: [nurseId], references: [id])
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  shift      Shift    @relation(fields: [shiftId], references: [id])
+
+  @@unique([nurseId, patientId, shiftId])
+  @@index([shiftId])
+  @@index([patientId])
+}
+
+model Task {
+  id                String    @id @default(uuid())
+  patientId         String
+  taskType          TaskType
+  title             String
+  frequencyMinutes  Int?
+  anchorTime        DateTime
+  graceMinutes      Int       @default(15)
+  lookaheadMinutes  Int       @default(30)
+  isActive          Boolean   @default(true)
+  shiftId           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  patient           Patient   @relation(fields: [patientId], references: [id])
+  shift             Shift?    @relation(fields: [shiftId], references: [id])
+  taskLogs          TaskLog[]
+
+  @@unique([patientId, title, shiftId])
+  @@index([patientId, isActive])
+  @@index([isActive])
+  @@index([shiftId])
+}
+
+model TaskLog {
+  id          String    @id @default(uuid())
+  taskId      String
+  nurseId     String
+  shiftId     String
+  patientId   String
+  completedAt DateTime  @default(now())
+  wasOverdue  Boolean   @default(false)
+  wasSkipped  Boolean   @default(false)
+  skipReason  String?
+
+  task        Task      @relation(fields: [taskId], references: [id])
+  nurse       Nurse     @relation(fields: [nurseId], references: [id])
+  shift       Shift     @relation(fields: [shiftId], references: [id])
+  patient     Patient   @relation(fields: [patientId], references: [id])
+
+  @@index([taskId])
+  @@index([shiftId])
+  @@index([nurseId])
+  @@index([completedAt])
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  patientId   String
+  nurseId     String
+  shiftId     String
+  content     String
+  timestamp   DateTime @default(now())
+
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  nurse       Nurse    @relation(fields: [nurseId], references: [id])
+  shift       Shift    @relation(fields: [shiftId], references: [id])
+
+  @@index([patientId, shiftId])
+}
